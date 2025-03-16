@@ -1,0 +1,116 @@
+---
+import MyInput from "../components/utils/MyInput.astro"
+import Layout from "../layouts/Layout.astro"
+import ContrastButton from "../components/utils/ContrastButton.astro"
+import BorderLine from "../components/utils/BorderLine.astro"
+import DefaultHeader from '../components/DefaultHeader.astro';
+import GlassContainer from "../components/utils/GlassContainer.astro"
+---
+
+
+<Layout>
+  <DefaultHeader />
+  <div class="center">
+    <GlassContainer>
+      <div class="container">
+        <div class="title">АВТОРИЗАЦИЯ</div>
+        <MyInput id= "loginInp" placeholder="ЛОГИН"/>
+        <MyInput id="passwordInp" type="password" placeholder="ПАРОЛЬ"/>
+        <ContrastButton color="white" id="login-button" size="large">
+          Войти
+        </ContrastButton>
+        <div class="has-account-text">Нет аккаунта</div>
+        <BorderLine/>
+        <div class="made-by-text"><span>Page designed and developed by </span><span class="made-by-decoration">Jury Levada</span><span>(;</span></div>
+      </div>
+    </GlassContainer>
+    
+  </div>
+</Layout>
+
+
+<style>
+  .center{
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: center;
+    margin-top: 35px;
+    margin-bottom: 35px;
+  }
+  .container{
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+    width: fit-content;
+  }
+  .title{
+    font-weight: 400;
+    font-size: 96px;
+    line-height: 96px;
+    letter-spacing: 0%;
+  }
+  .has-account-text{
+    font-family: inherit;
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-thickness: Auto;
+    text-decoration-skip-ink: auto;
+
+  }
+  .made-by-text{
+    display: flex;
+    gap: 10px;
+    font-family: inherit;
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 32px;
+    letter-spacing: 0%;
+  }
+  .made-by-decoration{
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-thickness: Auto;
+    text-decoration-skip-ink: auto;
+  }
+</style>
+
+<script>
+  import { apiUrl } from "./api";
+
+  const loginInp = document.getElementById("loginInp") as HTMLInputElement;
+  const passwordInp = document.getElementById("passwordInp") as HTMLInputElement;
+  document.getElementById("login-button")?.addEventListener("click", () => {
+    const loginInpVal = loginInp.value;
+    const passwordInpVal = passwordInp.value;
+
+    if(!loginInpVal || !passwordInpVal ){
+      alert("Введите логин или пароль!")
+    }
+    console.log(loginInpVal)
+    console.log(passwordInpVal)
+    fetch(`${apiUrl}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json", // Указываем формат данных
+        },
+        body: JSON.stringify({
+          login: loginInpVal,
+          password: passwordInpVal,
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      const id = data.id as Number;
+      document.cookie = `token=${id};path=/; max-age=31536000`
+      window.location.replace("/profile");
+    })
+    .catch(error => {
+        console.error("Ошибка при загрузке файла:", error);
+    });
+  })
+</script>

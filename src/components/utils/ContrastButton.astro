@@ -1,0 +1,62 @@
+---
+interface Props{
+  size: "small" | "large"
+  id: string,
+  color: "orange" | "white"
+}
+
+let sizeClass = ""
+if(Astro.props.size === "small"){
+  sizeClass = "small-button"
+}
+else{
+  sizeClass = "large-button"
+}
+
+let colorClass = ""
+
+if(Astro.props.color === "orange"){
+  colorClass = "orange-button"
+}
+else{
+  colorClass = "white-button"
+}
+---
+
+<div id={Astro.props.id} class={sizeClass + " base " + colorClass} ><slot/></div>
+
+<style>
+  .base{
+    padding: 15px;
+    border-radius: 16px;
+    box-shadow: 0px 4px 5px 0px #000000BF;
+  }
+  .base:hover{
+    cursor: pointer;
+    opacity: 0.5;
+  }
+  .small-button{
+    font-family: inherit;
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+    text-align: center;
+  }
+  .large-button{
+    font-family: inherit;
+    font-weight: 400;
+    font-size: 64px;
+    line-height: 64px;
+    letter-spacing: 0%;
+    text-align: center;
+  }
+  .orange-button{
+    background-color: #F5844C;
+    color: white;
+  }
+  .white-button{
+    background-color: white;
+    color: black;
+  }
+</style>

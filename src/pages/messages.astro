@@ -1,0 +1,192 @@
+---
+  import Layout from "../layouts/Layout.astro"
+  import Header from "../components/Header.astro"
+  import ContrastButton from "../components/utils/ContrastButton.astro"
+  import LargeText from "../components/utils/LargeText.astro"
+  import BorderLine from "../components/utils/BorderLine.astro"
+  import { apiUrl } from "./api"
+  import UserHeader from "../components/UserHeader.astro"
+  
+  const token = Astro.cookies.get("token").value ?? ""
+  if(!token)
+    return Astro.redirect("/login")
+
+  const userId = Number.parseInt(token)
+  const page = Number.parseInt(Astro.url.searchParams.get("page") ?? "1")
+  const messages = Array.from(await fetch(`${apiUrl}/messages/${page}?userId=${userId}`).then(r => r.json())).map(u => u as any)
+---
+
+<Layout>
+  <UserHeader />
+  <div class="center">
+    <div class="orders-container">
+      {messages.map(order => {
+        const dowloadResultClass = order.hasFileResult ? "dowload-result active-text" : "active-text"
+        return (
+          <div class="container">
+            <LargeText>{order.orderTitle}</LargeText>
+            <BorderLine />
+            <div class="order-container">
+              <div class="inner-order-container">
+                <div class="data-container">
+                  <div class="upper-data-conteiner">
+                    <div>{order.fromUserLogin} -> {order.toUserLogin}</div>
+                    <div>{order.actionDate}</div>
+                  </div>
+                  <div class="descr-text">
+                    {order.message}
+                  </div>
+                  <div class="upper-data-conteiner">
+                    <div data-file-path={order.fileResultPath} class={dowloadResultClass}>{order.actionName}</div>
+                    {order.isAcceptable ? (<ContrastButton color="orange" id={`response-click-${order.orderId}`} size="small">
+                      <div class="response-click" data-user-id={order.fromUserId} data-order-id={`${order.orderId}`}>ПРИНЯТЬ</div>
+                    </ContrastButton>) : ""}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      <div class="counter-container">{Array.from(Array(10).keys()).map(el => {
+        return <a class="page-counter" href={`/messages?page=${el + 1}&userId=${userId}`}>{el + 1}</a>
+      })}</div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { apiUrl } from "./api";
+  Array.from(document.getElementsByClassName("response-click")).forEach(el => {
+    const htmlEl = el as HTMLElement;
+    const userId = Number.parseInt(htmlEl.dataset.userId ?? "")
+    htmlEl.addEventListener("click", () => {
+      const orderId = Number.parseInt(htmlEl.dataset.orderId as "")
+      fetch(`${apiUrl}/orders/accept?userId=${userId}&orderId=${orderId}`, {
+        method: "POST"
+      }).then(d =>{
+        if(d.ok)
+          location.reload();
+        else
+          alert("Ошибка с сервера")
+      })
+    })
+  })
+  Array.from(document.getElementsByClassName("dowload-result")).forEach(el => {
+    const htmlEl = el as HTMLElement;
+    htmlEl.addEventListener("click", () => {
+      const filePath = htmlEl.dataset.filePath;
+      if (filePath) {
+        fetch(filePath)
+          .then((response) => response.blob()) // Получаем файл как Blob
+          .then((blob) => {
+            const url = URL.createObjectURL(blob); // Создаем временный URL
+            const el = document.createElement("a");
+            el.href = url;
+            el.download = filePath.split("/").pop() || "file"; // Имя файла из URL
+            document.body.appendChild(el); // Добавляем ссылку в DOM
+            el.click(); // Программно кликаем по ссылке
+            document.body.removeChild(el); // Удаляем ссылку из DOM
+            URL.revokeObjectURL(url); // Освобождаем память
+          })
+          .catch((error) => {
+            console.error("Ошибка при скачивании файла:", error);
+          });
+      }
+    })
+  })
+
+</script>
+
+<style>
+  .counter-container{
+    display: flex;
+    height: fit-content;
+    gap: 35px;
+    width: fit-content;
+    margin: 72px;
+    padding-bottom: 72px;
+    max-width: 800px;
+  }
+  .page-counter{
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+    background: rgba(0, 0, 0, 0.3);
+  }
+  .active-text{
+    color: #F5844C;
+    text-shadow: 4px 4px 0px rgba(0, 0, 0, 0.75); 
+  }
+  .dowload-result.active-text{
+    cursor: pointer;
+  }
+  .dowload-result.active-text:hover{
+    cursor: pointer;
+    opacity: 0.5;
+  }
+  .orders-container{
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+  }
+  .order-img{
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 16px;
+  }
+  .center{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    
+  }
+  .order-container{
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+    display: flex;
+    flex-direction: column;
+    
+    max-width: 762px;
+    gap: 35px;
+  }
+  .inner-order-container{
+    display: flex;
+    gap: 35px;
+    font-family: inherit;
+    align-items: center;
+  }
+  .descr-text{
+    max-width: 700px;
+  }
+  .upper-data-conteiner{
+    display: flex;
+    align-items: center;
+    gap: 70px;
+  }
+  .container{
+    width: fit-content;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 64px;
+    border-radius: 16px;
+    margin: 64px;
+  }
+  .data-container{
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+  }
+</style>

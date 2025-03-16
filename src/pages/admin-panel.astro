@@ -1,0 +1,227 @@
+---
+  import Layout from "../layouts/Layout.astro"
+  import ContrastButton from "../components/utils/ContrastButton.astro"
+  import { apiUrl } from "./api"
+  import UserHeader from "../components/UserHeader.astro"
+  const users = Array.from(await fetch(`${apiUrl}/profiles`).then(r => r.json())).map(a => a as any)
+  const orders = Array.from(await fetch(`${apiUrl}/orders`).then(r => r.json())).map(a => a as any)
+  const token = Astro.cookies.get("token").value ?? ""
+  if(!token)
+    return Astro.redirect("/login")
+  const userId = Number.parseInt(token)
+  const profile = await fetch(`${apiUrl}/profile/${userId}`).then(j => j.json())
+  if(profile.profileData.login !== "admin")
+    return Astro.redirect("/profile")
+---
+
+<Layout>
+  <UserHeader />
+  <table>
+    <tbody>
+      <tr><td></td></tr>
+      <tr>
+        <td><div><strong>Айди</strong></div></td>
+        <td><div><strong>Логин</strong></div></td>
+        <td><div><strong>Аватар</strong></div></td>
+        <td><div><strong>Статус</strong></div></td>
+        <td><div><strong>Телефон</strong></div></td>
+        <td><div><strong>Сервис</strong></div></td>
+        <td><div><strong>Портфолио</strong></div></td>
+      </tr>
+      {users.map((user) => (
+        <tr> {/* Добавляем ключ для каждого элемента списка */}
+          <td><div>{user.userId}</div></td>
+          <td><div id={`login-${user.userId}`} contenteditable>{user.login}</div></td>
+          <td><div>{user.avatarPath ? (<img src={user.avatarPath} class="avatar" alt="Avatar" />) : (<div></div>)}</div></td>
+          <td><div id={`status-${user.userId}`} contenteditable>{user.status}</div></td>
+          <td><div id={`phoneNumber-${user.userId}`} contenteditable>{user.phoneNumber}</div></td>
+          <td><div id={`service-${user.userId}`} contenteditable>{user.service}</div></td>
+          <td><div id={`portfolio-${user.userId}`} contenteditable>{user.portfolio ? user.portfolio : "#нет"}</div></td>
+          <td></td>
+          <td></td>
+          <td>
+            <ContrastButton id={`${user.userId}-edit-button`} color="white" size="small" >
+              <div class="edit-button-text" data-user-id={`${user.userId}`}>
+                Изменить
+              </div>
+            </ContrastButton>
+          </td>
+          <td>
+            <ContrastButton id={`${user.userId}-delete-button`} color="white" size="small" >
+              <div class="delete-button-text" data-is-deleted={`${user.isDeleted}`} data-user-id={`${user.userId}`}>
+                {user.isDeleted === true ? "Восстановить" : "Удалить"}
+              </div>
+            </ContrastButton>
+          </td>
+        </tr>
+      ))}
+      <tr>
+        <td><div><strong>Айди</strong></div></td>
+        <td><div><strong>Создатель</strong></div></td>
+        <td><div><strong>Исполнитель</strong></div></td>
+        <td><div><strong>Сервис</strong></div></td>
+        <td><div><strong>Цена</strong></div></td>
+        <td><div><strong>Сроки</strong></div></td>
+        <td><div><strong>Название</strong></div></td>
+        <td><div><strong>Фото</strong></div></td>
+        <td><div><strong>Статус</strong></div></td>
+      </tr>
+      {orders.map((order) => (
+        <tr> {/* Добавляем ключ для каждого элемента списка */}
+          <td><div>{order.orderId}</div></td>
+          <td><div>{order.userLogin}</div></td>
+          <td><div>{order.userRespondedLogin}</div></td>
+          <td><div id={`order-service-${order.orderId}`} contenteditable>{order.service}</div></td>
+          <td><div id={`order-cost-${order.orderId}`} contenteditable>{order.cost}</div></td>
+          <td><div id={`order-dateRange-${order.orderId}`} contenteditable>{order.dateRange}</div></td>
+          <td><div id={`order-title-${order.orderId}`} contenteditable>{order.title}</div></td>
+          <td><div>{order.photoPath ? (<img src={order.photoPath} class="avatar" alt="Avatar" />) : (<div></div>)}</div></td>
+          <td><div>{order.status}</div></td>
+          <td>
+            <ContrastButton id={`${order.orderId}-edit-button-order`} color="white" size="small" >
+              <div class="edit-button-text-order" data-order-id={`${order.orderId}`}>
+                Изменить
+              </div>
+            </ContrastButton>
+          </td>
+          <td>
+            <ContrastButton id={`${order.orderId}-delete-button-order`} color="white" size="small" >
+              <div class="delete-button-text-order" data-is-deleted={`${order.isDeleted}`} data-order-id={`${order.orderId}`}>
+                {order.isDeleted === true ? "Восстановить" : "Удалить"}
+              </div>
+            </ContrastButton>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  
+  <table>
+    
+    </thead>
+    <tbody>
+      
+    </tbody>
+  </table>
+</Layout>
+
+<script>
+import { apiUrl } from "./api";
+
+  Array.from( document.getElementsByClassName("edit-button-text")).forEach(el => {
+    const htmlEl = el as HTMLElement;
+    htmlEl.addEventListener("click", () => {
+      const userId = Number.parseInt(htmlEl.dataset.userId ?? "");
+      const login = document.getElementById(`login-${userId}`)?.innerText
+      const status = document.getElementById(`status-${userId}`)?.innerText
+      const phoneNumber = document.getElementById(`phoneNumber-${userId}`)?.innerText
+      const service = document.getElementById(`service-${userId}`)?.innerText
+      const portfolio = document.getElementById(`portfolio-${userId}`)?.innerText
+      fetch(`${apiUrl}/profile`, {
+        method: "PUT",
+        body: JSON.stringify({
+          userId: userId,
+          login: login,
+          status: status,
+          phoneNumber: phoneNumber,
+          service: service,
+          portfolio: portfolio
+        }),
+        headers: {
+          "content-type": "application/json"
+        }
+      }).then(r => {
+        if(r.ok)
+          location.reload();
+      })
+    })
+  })
+  Array.from( document.getElementsByClassName("edit-button-text-order")).forEach(el => {
+    const htmlEl = el as HTMLElement;
+    htmlEl.addEventListener("click", () => {
+      const orderId = htmlEl.dataset.orderId;
+      const cost = document.getElementById(`order-cost-${orderId}`)?.innerText
+      const dateRange = document.getElementById(`order-dateRange-${orderId}`)?.innerText
+      const title = document.getElementById(`order-title-${orderId}`)?.innerText
+      const service = document.getElementById(`order-service-${orderId}`)?.innerText
+      fetch(`${apiUrl}/order?orderId=${orderId}&cost=${cost}&dateRange=${dateRange}&title=${title}&service=${service}`, {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json"
+        }
+      })
+      .then(r => {
+        if(r.ok)
+          location.reload();
+      })
+    })
+  })
+  Array.from( document.getElementsByClassName("delete-button-text")).forEach(el => {
+    const htmlEl = el as HTMLElement;
+    const isDeleted = htmlEl.dataset.isDeleted;
+    htmlEl.addEventListener("click", () => {
+      const userId = Number.parseInt(htmlEl.dataset.userId ?? "");
+      fetch(`${apiUrl}/profile?userId=${userId}&isDeleted=${isDeleted}`, {
+        method: "DELETE",
+        headers: {
+          "content-type": "application/json"
+        }
+      }).then(r => {
+        if(r.ok)
+          location.reload();
+      })
+    })
+  })
+
+  Array.from( document.getElementsByClassName("delete-button-text-order")).forEach(el => {
+    const htmlEl = el as HTMLElement;
+    const isDeleted = htmlEl.dataset.isDeleted;
+    htmlEl.addEventListener("click", () => {
+      const orderId = Number.parseInt(htmlEl.dataset.orderId ?? "");
+      fetch(`${apiUrl}/order?orderId=${orderId}&isDeleted=${isDeleted}`, {
+        method: "DELETE",
+        headers: {
+          "content-type": "application/json"
+        }
+      }).then(r => {
+        if(r.ok)
+          location.reload();
+      })
+    })
+  })
+</script>
+
+
+<style>
+  table{
+    font-weight: 400;
+    font-size: 36px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    text-align: justify;
+    vertical-align: middle;
+    border-spacing: 35px 35px;
+    margin: 0 auto;
+  }
+  .title{
+    font-weight: 400;
+    font-size: 56px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    margin: 50px;
+    display: block;
+  }
+  .header{
+    display: flex;
+    gap: 35px;
+  }
+  .avatar{
+    max-width: 50px;
+    border-radius: 5px;
+    max-height: 50px;
+  }
+  .user-profile{
+    display: flex;
+    gap: 35px;
+  }
+</style>

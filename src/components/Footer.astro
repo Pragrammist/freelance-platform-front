@@ -1,0 +1,120 @@
+---
+import BorderLine from "./utils/BorderLine.astro";
+import ContrastButton from "./utils/ContrastButton.astro";
+import GlassContainer from "./utils/GlassContainer.astro";
+---
+<div class="global-container">
+  <div class="container">
+    <div class="contacts">
+      Контакты
+    </div>
+    <div>
+      <div class="contact-data">
+        +7 903 ### ## ##
+      </div>
+      <div class="contact-data">
+        vk.com/onlyone#######
+      </div>
+      <div class="contact-data">
+        Telegram/@onlyone#######
+      </div>
+    </div>
+    <div class="write-message-text">
+      <ContrastButton color="white" size="small" id="message-me"><div>Написать</div></ContrastButton>
+    </div>
+    <BorderLine />
+    <div class="made-by">Page designed and developed by <stroke>Jury Levada</stroke></div>
+  </div>
+  <div class="container">
+    <div class="contacts">
+      Гайд по созданию заказа
+    </div>
+    <div>
+      <div class="contact-data">
+        Зарегестрироваться
+      </div>
+      <div class="contact-data">
+        Нажать мой проект
+      </div>
+      <div class="contact-data">
+        Ввести данные
+      </div>
+    </div>
+    <div class="write-message-text">
+      <ContrastButton color="white" size="small" id="message-me"><div>Удачи</div></ContrastButton>
+    </div>
+    <BorderLine />
+    <div class="made-by">НЕ БОЛЕЙТЕ</div>
+  </div>
+  <div class="container">
+    <div class="contacts">
+      Правила пользования
+    </div>
+    <div>
+      <div class="contact-data">
+        Не обманывать другий людей
+      </div>
+      <div class="contact-data">
+        Результат должен удовлетворять заказсчика
+      </div>
+      <div class="contact-data">
+        Не баловаться (:
+      </div>
+    </div>
+    <div class="write-message-text">
+      <ContrastButton color="white" size="small" id="message-me"><div>Подробнее</div></ContrastButton>
+    </div>
+    <BorderLine />
+    <div class="made-by">"ООО" "ХОРОШИЕ ПРАВИЛА"</div>
+  </div>
+</div>
+
+<style>
+  .global-container{
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 35px;
+    gap: 35px;
+  }
+  .container{
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    padding: 35px;
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+    width: fit-content;
+  }
+  .write-message-text{
+    width: 300px;
+  }
+  .contacts{
+    font-weight: 400;
+    font-size: 64px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    vertical-align: middle;
+  }
+  .contact-data{
+    font-weight: 400;
+    font-size: 32px;
+    line-height: 100%;
+    letter-spacing: 0%;
+
+  }
+  .made-by{
+    font-weight: 400;
+    font-size: 32px;
+    line-height: 100%;
+    letter-spacing: 0%;
+
+  }
+
+</style>

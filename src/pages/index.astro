@@ -1,11 +1,106 @@
 ---
 import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import DefaultHeader from '../components/DefaultHeader.astro';
+import StartPageText from '../components/StartPageText.astro';
+import { apiUrl } from './api';
+import BorderLine from '../components/utils/BorderLine.astro';
+import Footer from '../components/footer.astro';
 
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+
+const someResults = Array.from(await fetch(`${apiUrl}/professional-results`).then(r => r.json())).map(r => r as any)
 ---
 
 <Layout>
-	<Welcome />
+	<DefaultHeader/>
+	<div class="startPageTextMargin"></div>
+	<StartPageText/>
+	<div class="margin-after-text"></div>
+	<BorderLine/>
+	<div class="imgs-container">
+		{someResults.map((someResult, i) => {
+			const imgClass = i % 2 == 0 ? "first-img" : "second-img"
+			return <div class="result-container">
+				<div class={`img-result ${imgClass}`}>
+					<img class="inner-img" src={someResult.fileResultPath}/>
+					<div class="login-profi">
+						<div>{someResult.login}</div>
+						<div class="avatar"><img src={someResult.avatarPath}/></div>
+					</div>
+				</div>
+			</div>
+		})}
+	</div>
+	<BorderLine/>
+	<Footer />
 </Layout>
+<style>
+	.startPageTextMargin{
+		margin-top: 228px;
+	}
+	.margin-after-text{
+		margin-top: 100px;
+	}
+	.login-profi{
+		background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.8) 100%);
+		font-weight: 400;
+		font-size: 36px;
+		line-height: 100%;
+		letter-spacing: 0%;
+		text-align: right;
+		vertical-align: middle;
+		border-radius: 30px;
+		display: flex;
+		gap: 35px;
+		align-items: center;
+		justify-content: end;
+		position: absolute;
+		bottom: 20px;
+		right: 0px;
+	}
+	.imgs-container{
+		display: flex;
+		gap: 35px;
+		align-items: center;
+		padding: 200px 35px;
+		overflow: hidden;
+	}
+	.first-img{
+		max-width: 650px;
+		max-height: 1000px;
+		border-radius: 20px;
+	}
+	.second-img{
+		max-width: 550px;
+		max-height: 850px;
+		border-radius: 10px;
+	}
+	.img-result{
+		display: flex;
+		align-items: center;
+		justify-items: center;
+	}
+	
+	.inner-img{
+		max-width: 100%;
+		max-height: 100%;
+	}
+	.result-container{
+		position: relative;
+		max-width: fit-content;
+		max-height: fit-content;
+	}
+	.avatar{
+		width: 100px;
+		height: 100px;
+		border-radius: 100px;
+	}
+	.avatar img{
+		width: 100%;
+		height: 100%;
+		border-radius: 100px;
+	}
+</style>
+

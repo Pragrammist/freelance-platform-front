@@ -1,0 +1,372 @@
+---
+  import Layout from "../layouts/Layout.astro"
+  import ContrastButton from "../components/utils/ContrastButton.astro"
+  import LargeText from "../components/utils/LargeText.astro"
+  import MediumImg from "../components/utils/MediumImg.astro"
+  import GlassContainer from "../components/utils/GlassContainer.astro"
+  import MyInput from "../components/utils/MyInput.astro"
+  import BorderLine from "../components/utils/BorderLine.astro"
+  import UserHeader from "../components/UserHeader.astro"
+
+  const token = Astro.cookies.get("token").value ?? ""
+  if(!token)
+    return Astro.redirect("/login")
+---
+
+<Layout>
+  <UserHeader />
+  <div class="center">
+    <GlassContainer>
+      <div class="container">
+        <LargeText><div class="edit-title" id="titleInp" contenteditable="true">НАЗВАНИЕ ЗАКАЗА</div></LargeText>
+        <div class="data-container">
+          <div class="data">
+            <MediumImg><img id="order-img"></MediumImg>
+            <ContrastButton color="white" id="change-img" size="large">ИЗМЕНИТЬ ФОТО</ContrastButton>
+          </div>
+          <div class="data">
+            <div class="input-container">
+              <MyInput id="descriptionInp" placeholder="ОПИСАНИЕ"/>
+              <MyInput id="serviceInp" placeholder="УСЛУГИ"/>
+              <MyInput id="costInp" type="number" placeholder="СТОИМОСТЬ"/>
+            </div>
+            <ContrastButton color="orange" id="save-changes" size="large">СОХРАНИТЬ ИЗМЕНЕНИЯ</ContrastButton>
+          </div>
+        </div>
+        <BorderLine></BorderLine>
+        <LargeText>ФАЙЛЫ ПРОЕКТА</LargeText>
+        <div class="file-containers">
+          <MediumImg><div id="file1" class="set-file"></div></MediumImg>
+          <MediumImg><div id="file2" class="set-file"></div></MediumImg>
+          <MediumImg><div id="file3" class="set-file"></div></MediumImg>
+        </div>
+        <BorderLine></BorderLine>
+        <LargeText>ОПУБЛИКОВАТЬ ИЛИ ПРИГЛАСИТЬ</LargeText>
+        <div class="data-container">
+          <div class="data">
+            <div class="input-container">
+              <MyInput containerHeight="100%" height="90%" isTextarea id="commentInp" placeholder="КОММЕНТАРИЙ"/>
+            </div>
+            <ContrastButton color="white" id="public" size="large">ОПУБЛИКОВАТЬ</ContrastButton>
+          </div>
+          <div class="data">
+            <div class="input-container">
+              <MyInput continerWidth="100%" containerHeight="initial" width="100%" id="specNameInp" placeholder="ИМЯ"/>
+              <MyInput containerHeight="70%" height="80%" width="100%" continerWidth="100%" isTextarea id="messageInp" placeholder="СООБЩЕНИЕ"/>
+            </div>
+            <ContrastButton color="orange" id="invite" size="large">ПРИГЛАСИТЬ</ContrastButton>
+          </div>
+        </div>
+      </div>
+    </GlassContainer>
+    
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { getCookie } from "../pages/cookie";
+  import { apiUrl} from "../pages/api"
+  const userId = Number.parseInt(getCookie('token') ?? "")
+  const titleInp = document.getElementById("titleInp") as HTMLElement;
+  const descrInp = document.getElementById("descriptionInp") as HTMLInputElement;
+  const serviceInp = document.getElementById("serviceInp") as HTMLInputElement;
+  const costInp = document.getElementById("costInp") as HTMLInputElement;
+  const commentInp = document.getElementById("commentInp") as HTMLInputElement;
+  const specNameInp = document.getElementById("specNameInp") as HTMLInputElement;
+  const messageInp = document.getElementById("messageInp") as HTMLInputElement;
+  
+
+  const imgElement = document.getElementById("order-img") as HTMLImageElement;
+
+  const cookie = getCookie("saved");
+
+  if (cookie) {
+      const savedData = JSON.parse(cookie);
+      console.log(savedData)
+      if (savedData.descrInpVal) descrInp.value = savedData.descrInpVal;
+      if (savedData.serviceInpVal) serviceInp.value = savedData.serviceInpVal;
+      if (savedData.costInpVal) costInp.value = savedData.costInpVal;
+      if (savedData.commentInpVal) commentInp.value = savedData.commentInpVal;
+      if (savedData.specNameInpVal) specNameInp.value = savedData.specNameInpVal;
+      if (savedData.messageInpVal) messageInp.value = savedData.messageInpVal;
+      if(savedData.titleInpVal) titleInp.innerHTML = savedData.titleInpVal
+  }
+  const cookie_img = getCookie("imagePath");
+  if (cookie_img) {
+      if (imgElement) {
+          imgElement.src = decodeURIComponent(cookie_img);
+      }
+  }
+  document.getElementById("save-changes")?.addEventListener("click", () => {
+      
+      const descrInpVal = descrInp.value;
+      const serviceInpVal = serviceInp.value;
+      const costInpVal = costInp.value;
+      const commentInpVal = commentInp.value;
+      const specNameInpVal = specNameInp.value;
+      const messageInpVal = messageInp.value;
+      const titleInpVal = titleInp.innerHTML;
+      document.cookie = `saved=${encodeURIComponent(JSON.stringify({
+          descrInpVal,
+          serviceInpVal,
+          costInpVal,
+          commentInpVal,
+          specNameInpVal,
+          messageInpVal,
+          titleInpVal
+      }))}; path=/; max-age=31536000`; // Кука живет 1 год
+      
+  });
+  Array.from(document.getElementsByClassName("set-file")).forEach(element => {
+    const htmlEl = element as HTMLElement
+    const ulr = getCookie(htmlEl.id+"Short")
+    if(ulr){
+      htmlEl.innerText = ulr;
+      htmlEl.classList.add("choosed")
+    }
+    element.addEventListener('click', () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.onchange = (event) => {
+          const file = (event.target as HTMLInputElement).files?.[0];
+          if (file) {
+              const reader = new FileReader();
+              reader.readAsDataURL(file); // Преобразуем файл в DataURL
+
+              // Отправка файла на сервер
+              const formData = new FormData();
+              formData.append("file", file);
+
+              fetch(`${apiUrl}/files`, {
+                  method: "POST",
+                  body: formData
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.filePath) {
+                      // Сохраняем путь к изображению в куки
+                      document.cookie = `${element.id}=${apiUrl}/${encodeURIComponent(data.filePath)}; path=/; max-age=31536000`; // Кука на 1 год
+                      document.cookie = `${element.id}Short=${file.name}; path=/; max-age=31536000`; // Кука на 1 год
+                      htmlEl.innerText = file.name;
+                      htmlEl.classList.add("choosed")
+                  }
+              })
+              .catch(error => {
+                  console.error("Ошибка при загрузке файла:", error);
+              });
+          }
+      };
+      input.click();
+      })
+  });
+  function publicOrder (isInvite: boolean) {
+    // Получаем значения из полей формы
+    const title = titleInp.innerHTML;
+    const description = descrInp.value;
+    const service = serviceInp.value;
+    const cost = Number(costInp.value);
+    const comment = commentInp.value;
+    const message = messageInp.value;
+    let specName = specNameInp.value;
+    
+    if(!isInvite)
+      specName = ""
+
+    // Получаем пути к файлам из куки
+    const photoPath = decodeURIComponent(getCookie("imagePath") || "");
+    const file1Path = decodeURIComponent(getCookie("file1") || "");
+    const file2Path = decodeURIComponent(getCookie("file2") || "");
+    const file3Path = decodeURIComponent(getCookie("file3") || "");
+
+    // Формируем тело запроса
+    
+
+    // Проверка обязательных полей
+    if (!description || !service || !cost || !title) {
+      alert("Заполните обязательные поля: Описание, Услуга, Стоимость, Заголовок");
+      return;
+    }
+
+    // Отправка запроса
+    fetch(`${apiUrl}/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: userId, // Здесь должен быть реальный ID пользователя
+        description: description,
+        service: service,
+        cost: cost,
+        comment: comment,
+        title: title,
+        photoPath: photoPath,
+        file1Path: file1Path,
+        file2Path: file2Path,
+        file3Path: file3Path,
+        desiredUserName: specName,
+        commentForDesiredUser: message
+      })
+    })
+    .then(response => {
+      if (!response.ok) throw new Error("Ошибка сервера");
+      return response.json();
+    })
+    .then(data => {
+      console.log("Заказ создан:", data);
+      alert("Заказ успешно опубликован!");
+      
+      // Очистка куки после успешной отправки
+      document.cookie = "imagePath=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "file1=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "file2=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "file3=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "file1Short=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "file2Short=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "file3Short=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "saved=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+      titleInp.innerHTML = ""
+      descrInp.value = ""
+      serviceInp.value = ""
+      costInp.value = ""
+      commentInp.value = ""
+      specNameInp.value = ""
+      messageInp.value = ""
+      imgElement.src = ""
+
+      Array.from(document.getElementsByClassName("set-file")).forEach(el => {
+        el.textContent = ""
+      })
+
+    })
+    .catch(error => {
+      console.error("Ошибка:", error);
+      alert("Ошибка при создании заказа");
+    });
+  }
+  document.getElementById("public")?.addEventListener("click", () => {
+    publicOrder (false) 
+  });
+  
+  document.getElementById("invite")?.addEventListener("click", () => {
+    publicOrder (true) 
+  });
+
+  document.getElementById("change-img")?.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg"; // Только JPEG
+    input.onchange = (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const imgElement = document.getElementById("order-img") as HTMLImageElement;
+                if (imgElement) {
+                    imgElement.src = reader.result as string; // Вставляем изображение в элемент
+                }
+            };
+            reader.readAsDataURL(file); // Преобразуем файл в DataURL
+
+            // Отправка файла на сервер
+            const formData = new FormData();
+            formData.append("file", file);
+
+            fetch(`${apiUrl}/files`, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.filePath) {
+                    // Сохраняем путь к изображению в куки
+                    document.cookie = `imagePath=${apiUrl}/${encodeURIComponent(data.filePath)}; path=/; max-age=31536000`; // Кука на 1 год
+
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка при загрузке файла:", error);
+            });
+        }
+    };
+    input.click();
+  });
+
+
+
+
+</script>
+
+<style>
+  #order-img{
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 50px;
+  }
+  .center{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .set-file{
+    width: 100%;
+    height: 100%;
+    font-family: inherit;
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+    color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    border: none;
+    align-content: center;
+    
+  }
+  .set-file:hover{
+    opacity: 0.5;
+    cursor: pointer;
+  }
+  .set-file.choosed{
+    background-color: #F5844C;
+    color: white;
+    box-shadow: 0px 4px 5px 0px #000000BF;
+    border-radius: 50px;
+  }
+  .section-margin{
+    margin: 20px 0;
+  }
+  .file-containers{
+    display: flex;
+    gap: 35px;
+  }
+  .data-container{
+    display: flex;
+    gap: 35px;
+  }
+  .container{
+    width: fit-content;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+  }
+  .data{
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+  }
+  .edit-title{
+    max-width: 1000px;
+  }
+  .input-container{
+    display: flex;
+    flex-direction: column;
+    height: 400px;
+    justify-content: space-between;
+  }
+</style>

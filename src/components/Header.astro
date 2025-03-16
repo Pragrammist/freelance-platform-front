@@ -1,0 +1,65 @@
+---
+  import ContrastButton from './utils/ContrastButton.astro' 
+
+  interface PropElement{
+    text: string,
+    url: string
+  }
+  interface Props {
+    elements: PropElement[];
+  }
+  const elements = Astro.props.elements.filter(el => el.text.toLowerCase() != "мой проект")
+  const myProj = Astro.props.elements.find(el => el.text.toLowerCase() == "мой проект")
+---
+
+<div class="h-container">
+  <div class="lambda-text"><a href="/">lambda</a></div>
+  <div class="h-inner-container">
+    {elements.map(el => <a id={el.text.toLowerCase()} href={el.url}>{el.text}</a>) }
+  </div>
+  {myProj && <ContrastButton  color="white" size="small" id="my-projects"><a href={myProj.url}>{myProj.text}</a></ContrastButton> }
+</div>
+
+
+
+<script>
+  import { getCookie } from "../pages/cookie";
+  import { apiUrl } from "../pages/api";
+  const userId = Number.parseInt(getCookie('token') ?? "")
+  if(userId){
+    fetch(`${apiUrl}/profile/${userId}`).then(r => r.json()).then(user => {
+      const login = document.getElementById("профиль")!
+      login.innerText = user.profileData.login 
+      console.log(user.profileData.login)
+    })
+  }
+</script>
+
+<style>
+  .h-container{
+    font-family: 'Bebas';
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    padding: 24px 0px 24px 0px;
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+    align-items: center;
+    gap: 250px;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .lambda-text{
+    font-family: 'Anjhay';
+    font-weight: 500;
+    font-size: 96px;
+    line-height: 105.98px;
+    letter-spacing: 0%;
+  }
+  .h-inner-container {
+    display: flex; 
+    gap: 110px;
+    align-items: center;
+  }
+</style>

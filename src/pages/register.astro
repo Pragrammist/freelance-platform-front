@@ -1,0 +1,89 @@
+---
+import MyInput from "../components/utils/MyInput.astro"
+import Layout from "../layouts/Layout.astro"
+import DefaultHeader from '../components/DefaultHeader.astro';
+import ContrastButton from "../components/utils/ContrastButton.astro"
+import GlassContainer from "../components/utils/GlassContainer.astro"
+
+---
+
+
+<Layout>
+  <DefaultHeader />
+  <div class="margin-form"></div>
+  <div class="center">
+    <GlassContainer>
+      <div class="container">
+        <div class="title">РЕГЕСТРАЦИЯ</div>
+        <MyInput id="phoneNumberInp" placeholder="НОМЕР ТЕЛЕФОНА"/>
+        <MyInput id="loginInp" placeholder="ЛОГИН"/>
+        <MyInput id="passworInp" type="password" placeholder="ПАРОЛЬ"/>
+        <MyInput id="service" placeholder="УСЛУГИ"/>
+        <ContrastButton color="white" id="register-button" size="large">
+          Создать профиль
+        </ContrastButton>
+        <a class="has-account-text">Есть аккаунт</a>
+      </div>
+    </GlassContainer>
+  </div>
+</Layout>
+
+<script>
+import { apiUrl } from "./api"
+
+    document.getElementById("register-button")?.addEventListener("click", () => {
+    const phoneNumberInp = (document.getElementById("phoneNumberInp") as HTMLInputElement)?.value
+    const loginInp = (document.getElementById("loginInp") as HTMLInputElement)?.value
+    const passworInp = (document.getElementById("passworInp") as HTMLInputElement)?.value
+    const service = (document.getElementById("service") as HTMLInputElement)?.value
+
+    fetch(`${apiUrl}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login: loginInp, phoneNumber: phoneNumberInp, password: passworInp, service: service })
+    })
+      .then(res => res.json())
+      .then(data => {
+        const id = data.id as Number;
+        if(id){
+          document.cookie = `token=${id};path=/; max-age=31536000`
+          window.location.replace("/profile");
+        }
+      });
+  })
+</script>
+
+<style>
+  .center{
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: center;
+    margin-top: 35px;
+    margin-bottom: 35px;
+  }
+  .container{
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+    width: fit-content;
+  }
+  .title{
+    font-weight: 400;
+    font-size: 96px;
+    line-height: 96px;
+    letter-spacing: 0%;
+  }
+  .has-account-text{
+    font-family: inherit;
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-thickness: Auto;
+    text-decoration-skip-ink: auto;
+
+  }
+</style>

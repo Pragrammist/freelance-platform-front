@@ -1,0 +1,379 @@
+---
+  import Layout from "../layouts/Layout.astro"
+  import Header from "../components/Header.astro"
+  import ContrastButton from "../components/utils/ContrastButton.astro"
+  import LargeText from "../components/utils/LargeText.astro"
+  import MediumImg from "../components/utils/MediumImg.astro"
+  import GlassContainer from "../components/utils/GlassContainer.astro"
+  import { apiUrl } from "./api"
+  import BorderLine from "../components/utils/BorderLine.astro"
+  import UserHeader from "../components/UserHeader.astro"
+  const token = Astro.cookies.get("token").value ?? ""
+  console.log(`${!!token}`)
+  if(!token)
+    return Astro.redirect("/login")
+  const userId = Number.parseInt(token)
+  console.log(userId)
+  const serverData = await fetch(`${apiUrl}/profile/${userId}`, {
+      method: 'GET'
+    })
+    .then(res => res.json())
+  const profile = serverData.profileData;
+  const orders = Array.from(serverData.orders).map(u => u as any);
+---
+
+<Layout>
+  <UserHeader />
+  <div class="center">
+    <GlassContainer>
+      <div class="container">
+        <LargeText>МОЙ ПРОФИЛЬ</LargeText>
+        <div class="data">
+          <MediumImg><div id="profile-img-wrapper"><img id="profile-img" src={profile.avatarPath} /></div></MediumImg>
+          <div class="text-data-container-where-button">
+            <div class="text-data-container">
+              <div class="inner-text-container-base props-container">
+               <div>
+                 ЛОГИН:
+               </div>
+               <div>
+                 ПОРТФОЛИО:
+               </div>
+               <div>
+                 СТАТУС:
+               </div>
+               <div>
+                 УСЛУГИ:
+               </div>
+              </div>
+              <div class="inner-text-container-base">
+               <div contenteditable id="login">
+                {profile.login}
+               </div>
+               <div contenteditable id="portfolio">
+                {profile.portfolio ?? "нет ссылки"}
+               </div>
+               <div contenteditable id="status">
+                {profile.status}
+               </div>
+               <div contenteditable id="service">
+                {profile.service}
+               </div>
+              </div>
+            </div>
+            <ContrastButton color="orange" id="save-button" size="large">
+              <div class="save-button-content">СОХРАНИТЬ ИЗМЕНЕНИЯ</div>
+            </ContrastButton>
+           </div>
+        </div>
+        <BorderLine/>
+        <LargeText>ЗАКАЗЫ</LargeText>
+        <div class="user-order-container">
+          {orders.map(order => {
+            const activeTextClass = order.isDownloadable ? "active-text dowload-result" : "active-text"
+            return (
+            <div class="user-order">
+              <div class="inner-order-container">
+                <div>{order.title}</div>
+                <div>{order.dateRange}</div>
+                <div data-file-path={order.fileResultPath} class={activeTextClass}>{order.status}</div>
+              </div>
+              <div class="inner-order-container">
+                <div>{order.login}</div>
+                <div>{order.userAction}</div>
+                {order.isUploadable ? (<ContrastButton color="orange" id={`file-button-${order.orderId}`} size="small">
+                  <div class="upload-video" data-order-id = {order.orderId}>Загрузить файл</div>
+                </ContrastButton>) : ""}
+                {order.isUploadable ? (<ContrastButton color="orange" id={`send-result-button-${order.orderId}`} size="small">
+                  <div class="send-result" data-order-id = {order.orderId}>Загрузить результат</div>
+                </ContrastButton>) : ""}
+                {order.isResultAcceptable ? (<ContrastButton color="orange" id={`file-button-${order.orderId}`} size="small">
+                  <div class="accept-result" data-order-id = {order.orderId}>Принять результат</div>
+                </ContrastButton>) : ""}
+              </div>
+            </div>
+            )})}
+        </div>
+      </div>
+    </GlassContainer>
+  </div>
+</Layout>
+
+<script>
+import { apiUrl } from "./api"
+import { getCookie } from "./cookie"
+  const userId = Number.parseInt(getCookie('token') ?? "")
+  const imgElement = document.getElementById("profile-img") as HTMLImageElement; 
+  document.getElementById("profile-img-wrapper")?.addEventListener("click", () => {
+    
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg"; // Только JPEG
+    input.onchange = (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+              imgElement.src = reader.result as string;
+            };
+            reader.readAsDataURL(file); // Преобразуем файл в DataURL
+
+            // Отправка файла на сервер
+            const formData = new FormData();
+            formData.append("file", file);
+
+            fetch(`${apiUrl}/files`, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.filePath) {
+                    // Сохраняем путь к изображению в куки
+                    //document.cookie = `profileImg=${apiUrl}/${encodeURIComponent(data.filePath)}; path=/; max-age=31536000`; // Кука на 1 год
+                    fetch(`${apiUrl}/profile/avatar?userId=${userId}&avatarPath=${encodeURIComponent(`${apiUrl}/${data.filePath}`)}`, {
+                      method: "POST"
+                    })
+                    // .then(res => {
+                    //   if(res.ok)
+                    //     alert("Аватар загружен")
+                    // })
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка при загрузке файла:", error);
+            });
+        }
+    };
+    input.click();
+  });
+
+  const loginEl = document.getElementById("login")!
+  const serviceEl = document.getElementById("service")!
+  const portfolioEl = document.getElementById("portfolio")!
+  const statusEl = document.getElementById("status")!
+  document.getElementById("save-button")?.addEventListener("click", () => {
+    fetch(`${apiUrl}/profile`, {
+      method: "PUT",
+      headers: {
+        "accept": "*/*",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        login:loginEl.innerText,
+        service: serviceEl.innerText,
+        portfolio: portfolioEl.innerText,
+        status: statusEl.innerText,
+        userId: userId
+      })
+    }).then(d => {
+      if(!d.ok)
+        alert("Ошибка")
+    })
+  })
+
+  Array.from(document.getElementsByClassName("upload-video")).forEach(el => {
+    const htmlEl = el as HTMLElement
+    const orderId = htmlEl.dataset.orderId
+    const text = getCookie(`${orderId}_file_name`)
+    if(text)
+      htmlEl.innerText = text
+
+    htmlEl.addEventListener('click', () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.onchange = (event) => {
+          const file = (event.target as HTMLInputElement).files?.[0];
+          if (file) {
+              const reader = new FileReader();
+              reader.readAsDataURL(file); // Преобразуем файл в DataURL
+
+              // Отправка файла на сервер
+              const formData = new FormData();
+              formData.append("file", file);
+
+              fetch(`${apiUrl}/files`, {
+                  method: "POST",
+                  body: formData
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.filePath) {
+                      // Сохраняем путь к изображению в куки
+                      document.cookie = `${orderId}_file=${apiUrl}/${data.filePath};path=/; max-age=31536000`
+                      document.cookie = `${orderId}_file_name=${file.name};path=/; max-age=31536000`
+                      htmlEl.innerText = file.name
+                  }
+              })
+              .catch(error => {
+                  console.error("Ошибка при загрузке файла:", error);
+              });
+          }
+      };
+      input.click();
+    })
+  })
+
+  Array.from(document.getElementsByClassName("accept-result")).forEach(el => {
+    const htmlEl = el as HTMLElement;
+    htmlEl.addEventListener("click", () => {
+      const orderId = Number.parseInt(htmlEl.dataset.orderId ?? "")
+      fetch(`${apiUrl}/orders/result/accept?userId=${userId}&orderId=${orderId}`, {
+        method: "POST"
+      }).then(r => {
+        if(r.ok)
+          location.reload();
+      })
+    })
+  })
+
+  Array.from(document.getElementsByClassName("dowload-result")).forEach(el => {
+    const htmlEl = el as HTMLElement;
+    htmlEl.addEventListener("click", () => {
+      const filePath = htmlEl.dataset.filePath;
+      if (filePath) {
+        fetch(filePath)
+          .then((response) => response.blob()) // Получаем файл как Blob
+          .then((blob) => {
+            const url = URL.createObjectURL(blob); // Создаем временный URL
+            const el = document.createElement("a");
+            el.href = url;
+            el.download = filePath.split("/").pop() || "file"; // Имя файла из URL
+            document.body.appendChild(el); // Добавляем ссылку в DOM
+            el.click(); // Программно кликаем по ссылке
+            document.body.removeChild(el); // Удаляем ссылку из DOM
+            URL.revokeObjectURL(url); // Освобождаем память
+          })
+          .catch((error) => {
+            console.error("Ошибка при скачивании файла:", error);
+          });
+      }
+    })
+  })
+
+  Array.from(document.getElementsByClassName("send-result")).forEach(el => {
+    const htmlEl = el as HTMLElement
+    const orderId = htmlEl.dataset.orderId
+    htmlEl.addEventListener('click', () => {
+      const filePath = getCookie(`${orderId}_file`)
+      fetch(`${apiUrl}/orders/result`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body:JSON.stringify({
+          userId, orderId, filePath
+        })
+      }).then(r => {
+        if(r.ok)
+          location.reload();
+      })
+    })
+  })
+</script>
+
+
+<style>
+  #profile-img-wrapper{
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #profile-img-wrapper:hover{
+    background-color: #f5f5f5;
+    border-radius: 50px;
+  }
+  #profile-img{
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 50px;
+    
+  }
+  .active-text{
+    color: #F5844C;
+    text-shadow: 4px 4px 0px rgba(0, 0, 0, 0.75); 
+  }
+  .dowload-result.active-text{
+    cursor: pointer;
+  }
+  .dowload-result.active-text:hover{
+    opacity: 0.5;
+  }
+  .inner-order-container{
+    display: flex;
+    gap: 35px;
+    align-items: center;
+  }
+  .user-order{
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+  }
+  .user-order-container{
+    display: flex;
+    flex-direction: column;
+  }
+  .center{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .container{
+    width: fit-content;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+  }
+  .my-profile-text{
+    font-family: inherit;
+    font-weight: 400;
+    font-size: 96px;
+    line-height: 96px;
+    letter-spacing: 0%;
+  }
+  .data{
+    display: flex;
+    gap: 35px;
+  }
+  .img-container{
+    width: 400px;
+    height: 400px;
+    top: 150px;
+    left: 66px;
+    border-radius: 50px;
+    background-color: #FFFFFF;
+  }
+  .text-data-container{
+    display: flex;
+    font-family: inherit;
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+    gap: 20px;
+  }
+  .save-button-content{
+    width: 728px;
+  }
+  .inner-text-container-base{
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+  }
+  .props-container{
+    align-items: end;
+  }
+  .text-data-container-where-button{
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+  }
+</style>

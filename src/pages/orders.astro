@@ -1,0 +1,167 @@
+---
+  import Layout from "../layouts/Layout.astro"
+  import Header from "../components/Header.astro"
+  import ContrastButton from "../components/utils/ContrastButton.astro"
+  import LargeText from "../components/utils/LargeText.astro"
+  import GlassContainer from "../components/utils/GlassContainer.astro"
+  import BorderLine from "../components/utils/BorderLine.astro"
+  import SmallImg from "../components/utils/SmallImg.astro"
+  import { apiUrl } from "./api"
+  import UserHeader from "../components/UserHeader.astro"
+  const token = Astro.cookies.get("token").value ?? ""
+  if(!token)
+    return Astro.redirect("/login")
+  const userId = Number.parseInt(token)
+  const page = Number.parseInt(Astro.url.searchParams.get("page") ?? "1")
+  
+  const response = await fetch(`${apiUrl}/orders/${page}?userId=${userId}`);
+  const orders = await response.json()
+---
+
+<Layout>
+  <UserHeader />
+  <div class="center">
+    <div class="orders-container">
+      {Array.from(orders).map(order => {
+        const orderAny = order as any;
+        const isShowButton = !orderAny.userIsResponded
+        const status = orderAny.userIsResponded ? "ВЫ ОТКЛИКНУЛИСЬ" : orderAny.status;
+        return (
+          <GlassContainer key={orderAny.id || orderAny.title}>
+            <div class="container">
+              <LargeText>{orderAny.title}</LargeText>
+              <BorderLine />
+              <div class="order-container">
+                <div class="inner-order-container">
+                  <SmallImg><img class="order-img" src={orderAny.photoPath}/></SmallImg>
+                  <div class="data-container">
+                    <div class="upper-data-conteiner">
+                      <div>{orderAny.cost} Руб.</div>
+                    </div>
+                    <div>{orderAny.dateRange}</div>
+                    <div class="descr-text">
+                      {orderAny.service}
+                    </div>
+                    <div class="upper-data-conteiner">
+                      <div class="active-text">{status}</div>
+                      {isShowButton ? (<ContrastButton color="orange" id={`response-click-${orderAny.orderId}`} size="small">
+                        <div class="response-click" data-order-id={`${orderAny.orderId}`}>ОТКЛИКНУТЬСЯ</div>
+                      </ContrastButton>) : ("")}
+                    </div>
+                  </div>
+                </div>
+                <div class="descr-text">
+                  {orderAny.description}
+                </div>
+              </div>
+            </div>
+          </GlassContainer>
+        );
+      })}
+      <div class="counter-container">{Array.from(Array(10).keys()).map(el => {
+        return <a class="page-counter" href={`/orders?page=${el + 1}`}>{el + 1}</a>
+      })}</div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { apiUrl } from "./api";
+  import { getCookie } from "./cookie";
+  const userId = getCookie("token")
+
+  Array.from(document.getElementsByClassName("response-click")).forEach(button => {
+    button.addEventListener("click", () => {
+      const buttonHtmlEl = button as HTMLElement;
+      console.log(buttonHtmlEl.dataset.orderId)
+      const orderId = buttonHtmlEl.dataset.orderId;
+      fetch(`${apiUrl}/orders/response?orderId=${orderId}&userId=${userId}`, {
+        method: 'POST'
+      }).then(r => {
+        if(r.ok)
+          location.reload();
+      })
+    })
+  })
+</script>
+
+<style>
+  .counter-container{
+    display: flex;
+    height: fit-content;
+    gap: 35px;
+    width: fit-content;
+    margin: 72px;
+    padding-bottom: 72px;
+  }
+  .page-counter{
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+    background: rgba(0, 0, 0, 0.3);
+  }
+  .active-text{
+    color: #F5844C;
+    text-shadow: 4px 4px 0px rgba(0, 0, 0, 0.75); 
+  }
+  .orders-container{
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+  }
+  .order-img{
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 16px;
+  }
+  .center{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    
+  }
+  .order-container{
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 48px;
+    letter-spacing: 0%;
+    display: flex;
+    flex-direction: column;
+    
+    max-width: 762px;
+    gap: 35px;
+  }
+  .inner-order-container{
+    display: flex;
+    gap: 35px;
+    font-family: inherit;
+    align-items: center;
+  }
+  .descr-text{
+    max-width: 700px;
+  }
+  .upper-data-conteiner{
+    display: flex;
+    align-items: center;
+    gap: 70px;
+  }
+  .container{
+    width: fit-content;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+  }
+  .data-container{
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+  }
+</style>

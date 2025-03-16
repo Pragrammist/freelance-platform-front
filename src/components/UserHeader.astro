@@ -1,0 +1,21 @@
+---
+  import Header from "../components/Header.astro"
+  import { apiUrl } from "../pages/api"
+  const token = Astro.cookies.get("token").value ?? ""
+  if(!token)
+    Astro.redirect("/login")
+  const userId = Number.parseInt(token)
+  const profile = await fetch(`${apiUrl}/profile/${userId}`).then(j => j.json())
+  const isAdmin = profile.profileData.login === "admin"
+  let elements = [{text: "ЗАКАЗЫ", url: `/orders?page=1`}, {text: "СООБЩЕНИЯ", url: `/messages?page=1`}, {text: "ПРОФИЛЬ", url: `/profile`}, {text: "мой проект", url: "/create-order"}, {text: "выйти", url: "/"}]
+  if(isAdmin)
+    elements = [...elements, {text:"админка", url: "/admin-panel"}]
+---
+<Header elements={elements}/>
+
+<script>
+  document.getElementById("выйти")?.addEventListener("click", () => {
+    document.cookie = "token=1;max-age=0"
+    window.location.replace("/register");
+  })
+</script>
